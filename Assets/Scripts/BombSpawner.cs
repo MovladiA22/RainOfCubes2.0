@@ -1,26 +1,53 @@
 using UnityEngine;
 
-public class BombSpawner : MonoBehaviour
+public class BombSpawner : Spawner
 {
     [SerializeField] private Bomb _bombPrefab;
+
+    private Vector3 _spawnPosition;
 
     public int NumberOfBombsCreated { get; private set; }
     public int NumberOfActiveBombs { get; private set; }
 
-    public Bomb Spawn(Vector3 cubePosition)
+    public void GetBomb(Vector3 position)
     {
-        var bombCopy = Instantiate(_bombPrefab, cubePosition, Quaternion.identity);
-        bombCopy.Exploded += DestroyBomb;
-        NumberOfBombsCreated++;
-        NumberOfActiveBombs++;
-
-        return bombCopy;
+        _spawnPosition = position;
+        GetObj();
     }
 
-    private void DestroyBomb(Bomb bomb)
+    protected override ISpawned Spawn(ISpawned spawned)
     {
-        bomb.Exploded -= DestroyBomb;
-        NumberOfActiveBombs--;
-        Destroy(bomb.gameObject);
+        var bombCopy = Instantiate(_bombPrefab, _spawnPosition, Quaternion.identity);
+        spawned = bombCopy;
+        bombCopy.Exploded += ReleaseObj;
+
+        return base.Spawn(spawned);
+    }
+
+    protected override void ActionOnGet(ISpawned obj)
+    {
+        if (obj is Bomb bomb)
+        {
+            bomb.ReturnSettings();
+            bomb.gameObject.SetActive(true);
+
+            bomb.Exploded += ReleaseObj;
+        }
+    }
+
+    protected override void ActionOnRelease(ISpawned obj)
+    {
+        if (obj is Bomb bomb)
+        {
+            bomb.gameObject.SetActive(false);
+
+            bomb.Exploded -= ReleaseObj;
+        }
+    }
+
+    protected override void DestroyObj(ISpawned obj)
+    {
+        if (obj is Bomb bomb)
+            Destroy(bomb.gameObject);
     }
 }

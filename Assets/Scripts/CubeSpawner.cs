@@ -1,59 +1,59 @@
 using System;
+using System.Collections;
 using UnityEngine;
-using UnityEngine.Pool;
 
-public class CubeSpawner : MonoBehaviour
+public class CubeSpawner : Spawner
 {
     [SerializeField] private Cube _cubePrefab;
     [SerializeField] private float _repeatRate;
 
-    private ObjectPool<Cube> _pool;
-    private int _poolCapacity = 10;
-    private int _maxSize = 10;
-
-    public event Action<Vector3> Spawned;
-
-    public int NumberOfCubesCreated { get; private set; }
-    public int NumberOfActiveCubes { get; private set; }
-
-    private void Awake()
-    {
-        _pool = new ObjectPool<Cube>
-            (createFunc: () => Spawn(),
-            collectionCheck: false,
-            defaultCapacity: _poolCapacity,
-            maxSize: _maxSize);
-    }
+    public event Action<Cube> Spawned;
 
     private void Start()
     {
-        InvokeRepeating(nameof(GetCube), 0.0f, _repeatRate);
+        StartCoroutine(Raining());
     }
 
-    public void DestroyCube(Cube cube)
-    {
-        cube.Collided -= DestroyCube;
-        var cubePosition = cube.transform.position;
-
-        Destroy(cube.gameObject);
-        NumberOfActiveCubes--;
-        Spawned?.Invoke(cubePosition);
-    }
-
-    private void GetCube()
-    {
-        _pool.Get();
-    }
-
-    private Cube Spawn()
+    protected override ISpawned Spawn(ISpawned obj)
     {
         var copyPosition = GetRandomPosition();
         Cube cubeCopy = Instantiate(_cubePrefab, copyPosition, Quaternion.identity);
-        cubeCopy.Collided += DestroyCube;
-        NumberOfCubesCreated++;
-        NumberOfActiveCubes++;
+        obj = cubeCopy;
 
-        return cubeCopy;
+        //Spawned?.Invoke(cubeCopy);
+        cubeCopy.TimeIsOver += ReleaseObj;
+
+        return base.Spawn(obj);
+    }
+
+    protected override void ActionOnGet(ISpawned obj)
+    {
+        if (obj is Cube cube)
+        {
+            cube.transform.position = GetRandomPosition();
+            cube.transform.rotation = Quaternion.identity;
+            cube.ReturnSettings();
+            cube.gameObject.SetActive(true);
+
+            Spawned?.Invoke(cube);
+            cube.TimeIsOver += ReleaseObj;
+        }
+    }
+
+    protected override void ActionOnRelease(ISpawned obj)
+    {
+        if (obj is Cube cube)
+        {
+            cube.gameObject.SetActive(false);
+
+            cube.TimeIsOver -= ReleaseObj;
+        }
+    }
+
+    protected override void DestroyObj(ISpawned obj)
+    {
+        if (obj is Cube cube)
+            Destroy(cube.gameObject);
     }
 
     private Vector3 GetRandomPosition()
@@ -67,5 +67,18 @@ public class CubeSpawner : MonoBehaviour
         float randomPositionZ = UnityEngine.Random.Range(minValueZ, maxValueZ + 1f);
 
         return new Vector3(randomPositionX, positionY, randomPositionZ);
+    }
+
+    private IEnumerator Raining()
+    {
+        var wait = new WaitForSeconds(_repeatRate);
+        bool isWork = true;
+
+        while (isWork)
+        {
+            GetObj();
+
+            yield return wait;
+        }
     }
 }
