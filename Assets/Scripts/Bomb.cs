@@ -4,7 +4,7 @@ using UnityEngine;
 
 [RequireComponent(typeof(Exploder))]
 [RequireComponent(typeof(Renderer))]
-public class Bomb : MonoBehaviour, ISpawned
+public class Bomb : SpawnableObject
 {
     [SerializeField] private float _minDetonationTime;
     [SerializeField] private float _maxDetonationTime;
@@ -44,14 +44,14 @@ public class Bomb : MonoBehaviour, ISpawned
 
     private IEnumerator ChangingTransparency()
     {
-        float divider = 100;
-        var wait = new WaitForSeconds(_detonationTime / divider);
+        float counter = _detonationTime;
+        var wait = new WaitForSeconds(Time.deltaTime);
         Color color = _renderer.material.color;
-        float step = 0.01f;
 
-        while (_renderer.material.color.a > 0.0f)
+        while (counter > 0.0f)
         {
-            color.a = Mathf.MoveTowards(_renderer.material.color.a, 0.0f, step);
+            counter -= Time.deltaTime;
+            color.a = counter / _detonationTime;
             _renderer.material.color = color;
             yield return wait;
         }

@@ -1,7 +1,7 @@
 using UnityEngine;
 using TMPro;
 
-public class SpawnStatisticsRenderer : MonoBehaviour
+public abstract class SpawnStatisticsRenderer<Spawner, Spawnable> : MonoBehaviour where Spawner : Spawner<Spawnable> where Spawnable : SpawnableObject
 {
     [SerializeField] private Spawner _spawner;
     [SerializeField] private TextMeshProUGUI _textMeshPro;

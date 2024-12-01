@@ -2,7 +2,7 @@ using System;
 using System.Collections;
 using UnityEngine;
 
-public class CubeSpawner : Spawner
+public class CubeSpawner : Spawner<Cube>
 {
     [SerializeField] private Cube _cubePrefab;
     [SerializeField] private float _repeatRate;
@@ -14,46 +14,33 @@ public class CubeSpawner : Spawner
         StartCoroutine(Raining());
     }
 
-    protected override ISpawned Spawn(ISpawned obj)
+    protected override Cube Create(Cube cube)
     {
         var copyPosition = GetRandomPosition();
         Cube cubeCopy = Instantiate(_cubePrefab, copyPosition, Quaternion.identity);
-        obj = cubeCopy;
 
-        //Spawned?.Invoke(cubeCopy);
         cubeCopy.TimeIsOver += ReleaseObj;
 
-        return base.Spawn(obj);
+        return base.Create(cubeCopy);
     }
 
-    protected override void ActionOnGet(ISpawned obj)
+    protected override void ActionOnGet(Cube cube)
     {
-        if (obj is Cube cube)
-        {
-            cube.transform.position = GetRandomPosition();
-            cube.transform.rotation = Quaternion.identity;
-            cube.ReturnSettings();
-            cube.gameObject.SetActive(true);
+        cube.transform.position = GetRandomPosition();
+        cube.transform.rotation = Quaternion.identity;
+        cube.ReturnSettings();
+        
+        base.ActionOnGet(cube);
 
-            Spawned?.Invoke(cube);
-            cube.TimeIsOver += ReleaseObj;
-        }
+        Spawned?.Invoke(cube);
+        cube.TimeIsOver += ReleaseObj;
     }
 
-    protected override void ActionOnRelease(ISpawned obj)
+    protected override void ActionOnRelease(Cube cube)
     {
-        if (obj is Cube cube)
-        {
-            cube.gameObject.SetActive(false);
+        base.ActionOnRelease(cube);
 
-            cube.TimeIsOver -= ReleaseObj;
-        }
-    }
-
-    protected override void DestroyObj(ISpawned obj)
-    {
-        if (obj is Cube cube)
-            Destroy(cube.gameObject);
+        cube.TimeIsOver -= ReleaseObj;
     }
 
     private Vector3 GetRandomPosition()

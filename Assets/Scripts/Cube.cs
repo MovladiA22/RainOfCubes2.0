@@ -4,7 +4,7 @@ using Random = UnityEngine.Random;
 
 [RequireComponent(typeof(Rigidbody))]
 [RequireComponent(typeof(Renderer))]
-public class Cube : MonoBehaviour, ISpawned
+public class Cube : SpawnableObject
 {
     private bool _isCollided = false;
     private float _lifeTime;
@@ -32,6 +32,7 @@ public class Cube : MonoBehaviour, ISpawned
     public void ReturnSettings()
     {
         _rigidbody.velocity = Vector3.zero;
+        _rigidbody.angularVelocity = Vector3.zero;
         _renderer.material.color = Color.clear;
         _isCollided = false;
     }

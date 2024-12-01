@@ -2,12 +2,12 @@ using System;
 using UnityEngine;
 using UnityEngine.Pool;
 
-public class Spawner : MonoBehaviour
+public abstract class Spawner<Object> : MonoBehaviour where Object : SpawnableObject
 {
     [SerializeField] private int _poolCapacity = 10;
     [SerializeField] private int _maxSize = 100;
 
-    private ObjectPool<ISpawned> _pool;
+    private ObjectPool<Object> _pool;
 
     public event Action ChangedCount;
 
@@ -17,8 +17,8 @@ public class Spawner : MonoBehaviour
 
     private void Awake()
     {
-        _pool = new ObjectPool<ISpawned>
-            (createFunc: () => Spawn(null),
+        _pool = new ObjectPool<Object>
+            (createFunc: () => Create(null),
             actionOnGet: (obj) => ActionOnGet(obj),
             actionOnRelease: (obj) => ActionOnRelease(obj),
             actionOnDestroy: (obj) => DestroyObj(obj),
@@ -27,7 +27,7 @@ public class Spawner : MonoBehaviour
             maxSize: _maxSize);
     }
 
-    protected void ReleaseObj(ISpawned obj)
+    protected void ReleaseObj(Object obj)
     {
         _pool.Release(obj);
     }
@@ -41,16 +41,25 @@ public class Spawner : MonoBehaviour
         ChangedCount?.Invoke();
     }
 
-    protected virtual ISpawned Spawn(ISpawned spawned)
+    protected virtual Object Create(Object obj)
     {
         NumberOfObjectsCreated++;
 
-        return spawned;
+        return obj;
     }
 
-    protected virtual void ActionOnGet(ISpawned obj) { }
+    protected virtual void ActionOnGet(Object obj) 
+    {
+        obj.gameObject.SetActive(true);
+    }
 
-    protected virtual void ActionOnRelease(ISpawned obj) { }
+    protected virtual void ActionOnRelease(Object obj)
+    {
+        obj.gameObject.SetActive(false);
+    }
 
-    protected virtual void DestroyObj(ISpawned obj) { }
+    private void DestroyObj(Object obj)
+    {
+        Destroy(obj.gameObject);
+    }
 }
